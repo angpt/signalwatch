@@ -1,0 +1,74 @@
+# signalwatch example config: SerpAPI for discovery, a local LLM for summaries.
+#
+#   export SERPAPI_API_KEY=...
+#   ollama serve   # or any OpenAI-compatible server, see [summarizer.llm] below
+#   python3 -m signalwatch run --config config/example.toml
+
+[storage]
+database_path = "work/state/mentions.db"
+latest_digest_path = "outputs/latest_digest.txt"
+history_dir = "outputs/digests"
+retention_days = 30
+
+[run]
+since_hours = 24
+timeout_seconds = 30
+max_results_per_query = 8
+user_agent = "signalwatch/0.1"
+
+[summarizer]
+# "local_llm" sends batched requests to an OpenAI-compatible /chat/completions
+# endpoint. Use "heuristic" to skip the LLM entirely (see config/heuristic.toml).
+provider = "local_llm"
+# If the server is down or returns junk, fall back to the keyword heuristic
+# instead of failing the run.
+fallback_to_heuristic = true
+
+[summarizer.llm]
+# Ollama:     http://127.0.0.1:11434/v1
+# llama.cpp:  http://127.0.0.1:8080/v1   (llama-server -m model.gguf)
+# llamafile:  http://127.0.0.1:8080/v1   (./model.llamafile --server --no-webui)
+# LM Studio:  http://127.0.0.1:1234/v1
+base_url = "http://127.0.0.1:11434/v1"
+model = "llama3.2"
+# Only needed if your server requires a bearer token; name the env var here.
+api_key_env = ""
+request_timeout_seconds = 240
+batch_size = 6
+max_input_chars = 4000
+max_batch_chars = 12000
+temperature = 0.0
+
+[providers.serpapi]
+enabled = true
+api_key_env = "SERPAPI_API_KEY"
+gl = "us"
+hl = "en"
+
+[providers.sources]
+# Each enabled source costs SerpAPI searches: google_search and google_news use
+# one search per keyword, selected_web uses one per keyword per selected domain.
+google_news = true
+google_search = true
+selected_web = true
+
+[filters]
+# Dropped on every source. Subdomains match too ("facebook.com" also drops
+# "m.facebook.com"). Per-keyword rejected_domains add to this list.
+rejected_domains = ["facebook.com", "instagram.com", "tiktok.com"]
+
+[[keywords]]
+name = "llama.cpp"
+query = "\"llama.cpp\" OR \"llamafile\""
+selected_domains = ["github.com", "news.ycombinator.com", "reddit.com"]
+max_results_per_source = 5
+
+[[keywords]]
+name = "acme"
+query = "\"acme\""
+# Drop results about unrelated senses of the word. Matched locally on word
+# boundaries and also sent to the search as -term.
+exclude_terms = ["roadrunner", "cartoon"]
+selected_domains = ["news.ycombinator.com", "lobste.rs"]
+rejected_domains = ["medium.com"]
+max_results_per_source = 8

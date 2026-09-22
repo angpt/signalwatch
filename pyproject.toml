@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "signalwatch"
+version = "0.1.0"
+description = "Local-first keyword monitoring: SerpAPI discovery, local-LLM summaries, plain-text daily digests."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+signalwatch = "signalwatch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["signalwatch*"]
